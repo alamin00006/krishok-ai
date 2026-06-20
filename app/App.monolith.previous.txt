@@ -1,0 +1,1130 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import './global.css';
+
+import { api, API_URL } from './src/api';
+import { colors } from './src/theme';
+import type {
+  ContentItem,
+  ContentResponse,
+  ConversationSummary,
+  PickedImage,
+  Question,
+  ScreenName,
+  User,
+} from './src/types';
+
+const USER_KEY = 'krishok-user-id';
+const GUEST_KEY = 'krishok-guest-id';
+type DetailTarget = { section: 'crops' | 'diseases'; id: string } | null;
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <KrishokApp />
+    </SafeAreaProvider>
+  );
+}
+
+function KrishokApp() {
+  const scheme = useColorScheme();
+  const [dark, setDark] = useState(scheme === 'dark');
+  const [screen, setScreen] = useState<ScreenName>('chat');
+  const [detail, setDetail] = useState<DetailTarget>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [guestId, setGuestId] = useState('');
+  const [ready, setReady] = useState(false);
+  const theme = makeTheme(dark);
+
+  useEffect(() => {
+    void (async () => {
+      const storedUser = await AsyncStorage.getItem(USER_KEY);
+      let storedGuest = await AsyncStorage.getItem(GUEST_KEY);
+      if (!storedGuest) {
+        storedGuest = `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await AsyncStorage.setItem(GUEST_KEY, storedGuest);
+      }
+      setUserId(storedUser);
+      setGuestId(storedGuest);
+      setReady(true);
+    })();
+  }, []);
+
+  const navigate = (next: ScreenName, target?: DetailTarget) => {
+    setDetail(target ?? null);
+    setScreen(next);
+  };
+  const login = async (user: User) => {
+    await AsyncStorage.setItem(USER_KEY, user.id);
+    setUserId(user.id);
+    setScreen('chat');
+  };
+  const logout = async () => {
+    await AsyncStorage.removeItem(USER_KEY);
+    setUserId(null);
+    setScreen('chat');
+  };
+
+  if (!ready) return <Loading theme={theme} />;
+
+  return (
+    <SafeAreaView style={[s.safe, { backgroundColor: theme.background }]}>
+      <StatusBar style={dark ? 'light' : 'dark'} />
+      <PaperLines dark={dark} />
+      <View style={s.flex}>
+        {screen === 'chat' && (
+          <ChatScreen
+            theme={theme}
+            dark={dark}
+            userId={userId}
+            guestId={guestId}
+            onTheme={() => setDark((value) => !value)}
+            onAccount={() => navigate('account')}
+          />
+        )}
+        {(screen === 'crops' || screen === 'diseases') && (
+          <ContentScreen
+            theme={theme}
+            section={screen}
+            onOpen={(id) => navigate('detail', { section: screen, id })}
+          />
+        )}
+        {screen === 'account' && (
+          <AccountScreen theme={theme} userId={userId} onLogin={login} onLogout={logout} />
+        )}
+        {screen === 'detail' && detail && (
+          <DetailScreen theme={theme} target={detail} onBack={() => navigate(detail.section)} />
+        )}
+      </View>
+      {screen !== 'detail' && (
+        <Tabs theme={theme} screen={screen} loggedIn={Boolean(userId)} onNavigate={navigate} />
+      )}
+    </SafeAreaView>
+  );
+}
+
+function ChatScreen({
+  theme,
+  dark,
+  userId,
+  guestId,
+  onTheme,
+  onAccount,
+}: {
+  theme: Theme;
+  dark: boolean;
+  userId: string | null;
+  guestId: string;
+  onTheme: () => void;
+  onAccount: () => void;
+}) {
+  const [messages, setMessages] = useState<Question[]>([]);
+  const [threads, setThreads] = useState<ConversationSummary[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [title, setTitle] = useState('Krishok.ai সহকারী');
+  const [text, setText] = useState('');
+  const [image, setImage] = useState<PickedImage | null>(null);
+  const [remaining, setRemaining] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const listRef = useRef<FlatList<Question>>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (userId) {
+        setThreads(await api.conversations(userId));
+        if (threadId) {
+          const conversation = await api.conversation(threadId, userId);
+          setMessages(conversation.questions);
+          setTitle(conversation.title);
+        } else {
+          setMessages([]);
+          setTitle('নতুন কৃষি আলোচনা');
+        }
+      } else {
+        const result = await api.guestQuestions(guestId);
+        setMessages(result.questions);
+        setRemaining(result.remaining);
+        setThreads([]);
+        setTitle('Krishok.ai সহকারী');
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [guestId, threadId, userId]);
+
+  useEffect(() => void load(), [load]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.75,
+    });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setImage({
+        uri: asset.uri,
+        name: asset.fileName ?? `crop-${Date.now()}.jpg`,
+        type: asset.mimeType ?? 'image/jpeg',
+      });
+    }
+  };
+
+  const send = async () => {
+    const clean = text.trim();
+    if (!clean || sending) return;
+    setText('');
+    setSending(true);
+    const pending: Question = {
+      id: `pending-${Date.now()}`,
+      text: clean,
+      imageUrl: image?.uri,
+    };
+    setMessages((current) => [...current, pending]);
+    try {
+      if (userId) {
+        let active = threadId;
+        if (!active) {
+          const created = await api.createConversation(userId, clean);
+          active = created.id;
+          setThreadId(created.id);
+          setTitle(created.title);
+        }
+        await api.sendMessage(active, userId, clean, image);
+      } else {
+        await api.sendGuestQuestion(guestId, clean, image);
+      }
+      setImage(null);
+      await load();
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    } catch (error) {
+      setMessages((current) => current.filter((item) => item.id !== pending.id));
+      setText(clean);
+      showError(error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Header
+        theme={theme}
+        title={title}
+        subtitle={userId ? 'সংরক্ষিত কৃষি আলোচনা' : `Guest প্রশ্ন বাকি ${remaining}/৫`}
+        icon="menu-outline"
+        onIcon={() => setDrawer(true)}
+        right={
+          <View style={s.row}>
+            <IconButton
+              theme={theme}
+              icon={dark ? 'sunny-outline' : 'moon-outline'}
+              onPress={onTheme}
+            />
+            <IconButton
+              theme={theme}
+              icon={userId ? 'person-circle-outline' : 'log-in-outline'}
+              onPress={onAccount}
+            />
+          </View>
+        }
+      />
+      <FlatList
+        ref={listRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={messages.length ? s.messages : s.emptyGrow}
+        renderItem={({ item }) => <Message theme={theme} item={item} />}
+        ListEmptyComponent={
+          loading ? <ActivityIndicator color={theme.primary} /> : <EmptyChat theme={theme} />
+        }
+      />
+      <View style={[s.composerArea, { backgroundColor: theme.paper }]}>
+        {image && (
+          <View style={[s.imageChip, { borderColor: theme.line }]}>
+            <Image source={{ uri: image.uri }} style={s.chipImage} />
+            <Text numberOfLines={1} style={[s.flex, { color: theme.ink }]}>
+              {image.name}
+            </Text>
+            <Pressable onPress={() => setImage(null)}>
+              <Ionicons name="close-circle" size={20} color={theme.red} />
+            </Pressable>
+          </View>
+        )}
+        <View style={[s.composer, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            multiline
+            placeholder="আপনার কৃষি সমস্যা লিখুন..."
+            placeholderTextColor={theme.muted}
+            style={[s.composerInput, { color: theme.ink }]}
+          />
+          <IconButton theme={theme} icon="image-outline" onPress={pickImage} />
+          <Pressable
+            onPress={send}
+            disabled={!text.trim() || sending}
+            style={[s.send, { backgroundColor: text.trim() ? theme.primary : theme.line }]}>
+            {sending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="send" size={18} color="#fff" />
+            )}
+          </Pressable>
+        </View>
+      </View>
+      <Drawer
+        theme={theme}
+        visible={drawer}
+        threads={threads}
+        active={threadId}
+        loggedIn={Boolean(userId)}
+        onClose={() => setDrawer(false)}
+        onNew={() => {
+          setThreadId(null);
+          setMessages([]);
+          setTitle('নতুন কৃষি আলোচনা');
+          setDrawer(false);
+        }}
+        onThread={(id) => {
+          setThreadId(id);
+          setDrawer(false);
+        }}
+        onAccount={onAccount}
+      />
+    </KeyboardAvoidingView>
+  );
+}
+
+function ContentScreen({
+  theme,
+  section,
+  onOpen,
+}: {
+  theme: Theme;
+  section: 'crops' | 'diseases';
+  onOpen: (id: string) => void;
+}) {
+  const [content, setContent] = useState<ContentResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setContent(await api.content());
+    } catch (error) {
+      showError(error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => void load(), [load]);
+
+  return (
+    <View style={s.flex}>
+      <Header
+        theme={theme}
+        title={section === 'crops' ? 'ফসল গাইড' : 'রোগ ও প্রতিকার'}
+        subtitle={section === 'crops' ? 'চাষ ও পরিচর্যা' : 'লক্ষণ ও করণীয়'}
+        icon={section === 'crops' ? 'leaf-outline' : 'bug-outline'}
+      />
+      <FlatList
+        data={content?.[section] ?? []}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={s.content}
+        refreshing={loading}
+        onRefresh={load}
+        ListHeaderComponent={
+          <View style={[s.hero, { backgroundColor: theme.mint, borderColor: theme.line }]}>
+            <Ionicons
+              name={section === 'crops' ? 'leaf' : 'scan-outline'}
+              size={30}
+              color={theme.primary}
+            />
+            <View style={s.flex}>
+              <Text style={[s.heroTitle, { color: theme.ink }]}>
+                {section === 'crops' ? 'সঠিক সময়ে সঠিক ফসল' : 'দ্রুত রোগ শনাক্ত করুন'}
+              </Text>
+              <Text style={[s.body, { color: theme.muted }]}>
+                Backend API থেকে সম্পূর্ণ গাইড দেখুন।
+              </Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <ContentCard theme={theme} item={item} onPress={() => onOpen(item.id)} />
+        )}
+      />
+    </View>
+  );
+}
+
+function DetailScreen({
+  theme,
+  target,
+  onBack,
+}: {
+  theme: Theme;
+  target: NonNullable<DetailTarget>;
+  onBack: () => void;
+}) {
+  const [item, setItem] = useState<ContentItem | null>(null);
+  useEffect(() => {
+    void api.contentDetail(target.section, target.id).then(setItem).catch(showError);
+  }, [target]);
+  return (
+    <View style={s.flex}>
+      <Header theme={theme} title="বিস্তারিত গাইড" icon="arrow-back" onIcon={onBack} />
+      {!item ? (
+        <Loading theme={theme} />
+      ) : (
+        <ScrollView contentContainerStyle={s.detail}>
+          <Image source={{ uri: item.image }} style={s.detailImage} />
+          <Card theme={theme}>
+            <Tag theme={theme} text={item.category} />
+            <Text style={[s.detailTitle, { color: theme.ink }]}>{item.name}</Text>
+            <Text style={[s.bodyLarge, { color: theme.muted }]}>{item.summary}</Text>
+          </Card>
+          {item.stats.map((stat) => (
+            <Card key={stat.label} theme={theme}>
+              <Text style={[s.statLabel, { color: theme.muted }]}>{stat.label}</Text>
+              <Text style={[s.statValue, { color: theme.ink }]}>{stat.value}</Text>
+            </Card>
+          ))}
+          {item.sections.map((section) => (
+            <Card key={section.title} theme={theme}>
+              <Text style={[s.sectionTitle, { color: theme.ink }]}>{section.title}</Text>
+              {section.items.map((line) => (
+                <View key={line} style={s.bullet}>
+                  <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
+                  <Text style={[s.body, s.flex, { color: theme.muted }]}>{line}</Text>
+                </View>
+              ))}
+            </Card>
+          ))}
+          <View style={[s.alert, { backgroundColor: theme.amberSoft, borderColor: theme.amber }]}>
+            <Ionicons name="warning-outline" size={22} color={theme.amber} />
+            <Text style={[s.body, s.flex, { color: theme.amber }]}>{item.alert}</Text>
+          </View>
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+function AccountScreen({
+  theme,
+  userId,
+  onLogin,
+  onLogout,
+}: {
+  theme: Theme;
+  userId: string | null;
+  onLogin: (user: User) => Promise<void>;
+  onLogout: () => Promise<void>;
+}) {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
+  useEffect(() => {
+    if (userId) void api.user(userId).then(setUser).catch(showError);
+    else setUser(null);
+  }, [userId]);
+
+  const submit = async () => {
+    setLoading(true);
+    setFeedback(null);
+    try {
+      const result =
+        mode === 'register'
+          ? await api.register({ name, phone, password })
+          : await api.login({ phone, password });
+      await onLogin(result);
+      setUser(result);
+      setPassword('');
+      setFeedback({
+        error: false,
+        text: mode === 'register' ? 'অ্যাকাউন্ট তৈরি হয়েছে।' : 'লগইন সফল।',
+      });
+    } catch (error) {
+      setFeedback({ error: true, text: getError(error) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={s.flex}>
+      <Header
+        theme={theme}
+        title={userId ? 'অ্যাকাউন্ট' : 'লগইন'}
+        subtitle="Krishok.ai profile"
+        icon="person-outline"
+      />
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.account}>
+        {feedback && (
+          <View
+            style={[
+              s.feedback,
+              {
+                backgroundColor: feedback.error ? theme.redSoft : theme.mint,
+                borderColor: feedback.error ? theme.red : theme.primary,
+              },
+            ]}>
+            <Text style={{ color: feedback.error ? theme.red : theme.primary }}>
+              {feedback.text}
+            </Text>
+          </View>
+        )}
+        {userId ? (
+          <Card theme={theme}>
+            <View style={[s.avatar, { backgroundColor: theme.mint }]}>
+              <Text style={[s.avatarText, { color: theme.primary }]}>
+                {user?.name?.charAt(0) ?? 'ক'}
+              </Text>
+            </View>
+            <Text style={[s.accountName, { color: theme.ink }]}>{user?.name}</Text>
+            <Text style={[s.centerText, { color: theme.muted }]}>{user?.phone}</Text>
+            <Text style={[s.helper, { color: theme.muted }]}>
+              {user?._count?.conversations ?? 0}টি chat thread
+            </Text>
+            <Button
+              theme={theme}
+              label="লগআউট"
+              icon="log-out-outline"
+              danger
+              onPress={() => void onLogout()}
+            />
+          </Card>
+        ) : (
+          <Card theme={theme}>
+            <View style={[s.segment, { backgroundColor: theme.paperDeep }]}>
+              {(['login', 'register'] as const).map((item) => (
+                <Pressable
+                  key={item}
+                  onPress={() => setMode(item)}
+                  style={[s.segmentButton, mode === item && { backgroundColor: theme.card }]}>
+                  <Text
+                    style={{
+                      color: mode === item ? theme.primary : theme.muted,
+                      fontWeight: '800',
+                    }}>
+                    {item === 'login' ? 'লগইন' : 'Signup'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {mode === 'register' && (
+              <Field
+                theme={theme}
+                icon="person-outline"
+                value={name}
+                onChange={setName}
+                placeholder="আপনার নাম"
+              />
+            )}
+            <Field
+              theme={theme}
+              icon="call-outline"
+              value={phone}
+              onChange={setPhone}
+              placeholder="01712345678"
+              phone
+            />
+            <Field
+              theme={theme}
+              icon="key-outline"
+              value={password}
+              onChange={setPassword}
+              placeholder="কমপক্ষে ৬ অক্ষরের password"
+              secure
+            />
+            <Button
+              theme={theme}
+              label={mode === 'register' ? 'অ্যাকাউন্ট তৈরি করুন' : 'লগইন করুন'}
+              icon={mode === 'register' ? 'person-add-outline' : 'log-in-outline'}
+              loading={loading}
+              onPress={submit}
+            />
+            <Text style={[s.helper, { color: theme.muted }]}>
+              Account ছাড়া সর্বোচ্চ ৫টি প্রশ্ন করা যাবে।
+            </Text>
+          </Card>
+        )}
+        <Text style={[s.api, { color: theme.muted }]}>API: {API_URL}</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+function Header({
+  theme,
+  title,
+  subtitle,
+  icon,
+  onIcon,
+  right,
+}: {
+  theme: Theme;
+  title: string;
+  subtitle?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onIcon?: () => void;
+  right?: React.ReactNode;
+}) {
+  return (
+    <View style={[s.header, { backgroundColor: theme.paper, borderColor: theme.line }]}>
+      <Pressable
+        disabled={!onIcon}
+        onPress={onIcon}
+        style={[s.headerIcon, { backgroundColor: theme.mint }]}>
+        <Ionicons name={icon} size={22} color={theme.primary} />
+      </Pressable>
+      <View style={s.flex}>
+        <Text numberOfLines={1} style={[s.headerTitle, { color: theme.ink }]}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text numberOfLines={1} style={[s.subtitle, { color: theme.muted }]}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {right}
+    </View>
+  );
+}
+
+function Tabs({
+  theme,
+  screen,
+  loggedIn,
+  onNavigate,
+}: {
+  theme: Theme;
+  screen: ScreenName;
+  loggedIn: boolean;
+  onNavigate: (screen: ScreenName) => void;
+}) {
+  const tabs: [ScreenName, string, keyof typeof Ionicons.glyphMap][] = [
+    ['chat', 'AI চ্যাট', 'chatbubble-ellipses-outline'],
+    ['crops', 'ফসল', 'leaf-outline'],
+    ['diseases', 'রোগ', 'bug-outline'],
+    [
+      'account',
+      loggedIn ? 'অ্যাকাউন্ট' : 'লগইন',
+      loggedIn ? 'person-circle-outline' : 'log-in-outline',
+    ],
+  ];
+  return (
+    <View style={[s.tabs, { backgroundColor: theme.paper, borderColor: theme.line }]}>
+      {tabs.map(([target, label, icon]) => {
+        const active = screen === target;
+        return (
+          <Pressable key={target} onPress={() => onNavigate(target)} style={s.tab}>
+            <Ionicons name={icon} size={22} color={active ? theme.primary : theme.muted} />
+            <Text style={[s.tabText, { color: active ? theme.primary : theme.muted }]}>
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function Drawer({
+  theme,
+  visible,
+  threads,
+  active,
+  loggedIn,
+  onClose,
+  onNew,
+  onThread,
+  onAccount,
+}: {
+  theme: Theme;
+  visible: boolean;
+  threads: ConversationSummary[];
+  active: string | null;
+  loggedIn: boolean;
+  onClose: () => void;
+  onNew: () => void;
+  onThread: (id: string) => void;
+  onAccount: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={s.modal}>
+        <Pressable onPress={onClose} style={s.backdrop} />
+        <View style={[s.drawer, { backgroundColor: theme.paper, borderColor: theme.line }]}>
+          <View style={s.drawerHead}>
+            <View>
+              <Text style={[s.brand, { color: theme.ink }]}>Krishok.ai</Text>
+              <Text style={[s.subtitle, { color: theme.muted }]}>কৃষকের ডিজিটাল সহকারী</Text>
+            </View>
+            <IconButton theme={theme} icon="close" onPress={onClose} />
+          </View>
+          <Button theme={theme} label="নতুন চ্যাট" icon="add" onPress={onNew} />
+          <Text style={[s.drawerLabel, { color: theme.muted }]}>সাম্প্রতিক চ্যাট</Text>
+          <ScrollView style={s.flex}>
+            {threads.map((thread) => (
+              <Pressable
+                key={thread.id}
+                onPress={() => onThread(thread.id)}
+                style={[s.thread, active === thread.id && { backgroundColor: theme.mint }]}>
+                <Ionicons name="chatbox-outline" size={18} color={theme.primary} />
+                <Text numberOfLines={1} style={[s.flex, { color: theme.ink }]}>
+                  {thread.title}
+                </Text>
+              </Pressable>
+            ))}
+            {!loggedIn && (
+              <Text style={[s.helper, { color: theme.muted }]}>History রাখতে login করুন।</Text>
+            )}
+          </ScrollView>
+          <Pressable onPress={onAccount} style={[s.drawerAccount, { borderColor: theme.line }]}>
+            <Ionicons
+              name={loggedIn ? 'person-circle-outline' : 'log-in-outline'}
+              size={22}
+              color={theme.primary}
+            />
+            <Text style={{ color: theme.ink, fontWeight: '800' }}>
+              {loggedIn ? 'অ্যাকাউন্ট' : 'লগইন'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function Message({ theme, item }: { theme: Theme; item: Question }) {
+  return (
+    <View>
+      <View style={s.userRow}>
+        <View style={[s.userBubble, { backgroundColor: theme.mint, borderColor: theme.line }]}>
+          <Text style={[s.message, { color: theme.ink }]}>{item.text}</Text>
+          {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={s.messageImage} />}
+        </View>
+      </View>
+      {item.aiAnswer && (
+        <View style={s.aiRow}>
+          <View style={[s.aiAvatar, { backgroundColor: theme.mint }]}>
+            <Ionicons name="leaf" size={18} color={theme.primary} />
+          </View>
+          <View style={[s.aiBubble, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <Text style={[s.message, { color: theme.ink }]}>{item.aiAnswer}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function EmptyChat({ theme }: { theme: Theme }) {
+  return (
+    <View style={s.empty}>
+      <View style={[s.emptyIcon, { backgroundColor: theme.mint }]}>
+        <Ionicons name="leaf" size={42} color={theme.primary} />
+      </View>
+      <Text style={[s.emptyTitle, { color: theme.ink }]}>কৃষি বিষয়ে কী জানতে চান?</Text>
+      <Text style={[s.centerText, { color: theme.muted }]}>
+        ফসল, রোগ, সার, সেচ বা মাটির সমস্যা সহজ বাংলায় লিখুন।
+      </Text>
+    </View>
+  );
+}
+
+function ContentCard({
+  theme,
+  item,
+  onPress,
+}: {
+  theme: Theme;
+  item: ContentItem;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[s.contentCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <Image source={{ uri: item.image }} style={s.contentImage} />
+      <View style={s.contentBody}>
+        <Tag theme={theme} text={item.category} />
+        <Text style={[s.contentTitle, { color: theme.ink }]}>{item.name}</Text>
+        <Text numberOfLines={2} style={[s.body, { color: theme.muted }]}>
+          {item.summary}
+        </Text>
+        <Text style={{ color: theme.primary, fontWeight: '800', marginTop: 12 }}>
+          বিস্তারিত দেখুন →
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function Card({ theme, children }: { theme: Theme; children: React.ReactNode }) {
+  return (
+    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {children}
+    </View>
+  );
+}
+
+function IconButton({
+  theme,
+  icon,
+  onPress,
+}: {
+  theme: Theme;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[s.iconButton, { backgroundColor: theme.mint, borderColor: theme.line }]}>
+      <Ionicons name={icon} size={20} color={theme.primary} />
+    </Pressable>
+  );
+}
+
+function Button({
+  theme,
+  label,
+  icon,
+  onPress,
+  loading,
+  danger,
+}: {
+  theme: Theme;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  loading?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading}
+      style={[s.button, { backgroundColor: danger ? theme.redSoft : theme.primary }]}>
+      {loading ? (
+        <ActivityIndicator color="#fff" />
+      ) : (
+        <Ionicons name={icon} size={19} color={danger ? theme.red : '#fff'} />
+      )}
+      <Text style={{ color: danger ? theme.red : '#fff', fontWeight: '800' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Field({
+  theme,
+  icon,
+  value,
+  onChange,
+  placeholder,
+  secure,
+  phone,
+}: {
+  theme: Theme;
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  secure?: boolean;
+  phone?: boolean;
+}) {
+  return (
+    <View style={[s.field, { backgroundColor: theme.paper, borderColor: theme.line }]}>
+      <Ionicons name={icon} size={19} color={theme.muted} />
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={theme.muted}
+        secureTextEntry={secure}
+        keyboardType={phone ? 'phone-pad' : 'default'}
+        style={[s.flex, { color: theme.ink }]}
+      />
+    </View>
+  );
+}
+
+function Tag({ theme, text }: { theme: Theme; text: string }) {
+  return (
+    <View style={[s.tag, { backgroundColor: theme.mint }]}>
+      <Text style={{ color: theme.primary, fontWeight: '800', fontSize: 11 }}>{text}</Text>
+    </View>
+  );
+}
+
+function Loading({ theme }: { theme: Theme }) {
+  return (
+    <View style={[s.center, { backgroundColor: theme.background }]}>
+      <ActivityIndicator color={theme.primary} size="large" />
+    </View>
+  );
+}
+
+function PaperLines({ dark }: { dark: boolean }) {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {Array.from({ length: 30 }).map((_, index) => (
+        <View
+          key={index}
+          style={[
+            s.paperLine,
+            {
+              top: index * 30,
+              backgroundColor: dark ? 'rgba(120,170,140,.06)' : 'rgba(90,130,170,.09)',
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+function getError(error: unknown) {
+  return error instanceof Error ? error.message : 'অনুরোধ সম্পন্ন হয়নি।';
+}
+function showError(error: unknown) {
+  Alert.alert('সমস্যা হয়েছে', getError(error));
+}
+
+type Theme = ReturnType<typeof makeTheme>;
+function makeTheme(dark: boolean) {
+  return dark
+    ? {
+        background: '#14261d',
+        paper: '#1b3125',
+        paperDeep: '#223c2c',
+        card: '#20382a',
+        ink: '#f4f0dd',
+        muted: '#aec0b3',
+        line: '#52705b',
+        primary: '#66d38d',
+        mint: '#294b35',
+        red: '#ff8c83',
+        redSoft: '#4a2826',
+        amber: '#ffd36a',
+        amberSoft: '#493f22',
+      }
+    : { ...colors, primary: colors.green, card: colors.white };
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  row: { flexDirection: 'row', gap: 7 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centerText: { textAlign: 'center', lineHeight: 21 },
+  emptyGrow: { flexGrow: 1, justifyContent: 'center' },
+  paperLine: { position: 'absolute', left: 0, right: 0, height: 1 },
+  header: {
+    minHeight: 68,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderBottomWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 18, fontWeight: '900' },
+  subtitle: { fontSize: 11, marginTop: 1 },
+  tabs: { minHeight: 66, paddingVertical: 7, borderTopWidth: 1.5, flexDirection: 'row' },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  tabText: { fontSize: 10, fontWeight: '800' },
+  messages: { padding: 14, paddingBottom: 22 },
+  empty: { alignItems: 'center', paddingHorizontal: 28 },
+  emptyIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '-2deg' }],
+  },
+  emptyTitle: { fontSize: 19, fontWeight: '900', marginTop: 16, marginBottom: 7 },
+  userRow: { alignItems: 'flex-end', marginBottom: 10 },
+  userBubble: {
+    maxWidth: '88%',
+    borderWidth: 1.3,
+    borderRadius: 18,
+    borderTopRightRadius: 5,
+    padding: 13,
+  },
+  aiRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 18 },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiBubble: {
+    maxWidth: '84%',
+    borderWidth: 1.3,
+    borderRadius: 18,
+    borderTopLeftRadius: 5,
+    padding: 14,
+  },
+  message: { fontSize: 15, lineHeight: 23 },
+  messageImage: { width: 170, height: 130, borderRadius: 12, marginTop: 10 },
+  composerArea: { paddingHorizontal: 10, paddingVertical: 8 },
+  composer: {
+    minHeight: 56,
+    borderWidth: 1.5,
+    borderRadius: 18,
+    paddingLeft: 12,
+    paddingRight: 7,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 5,
+  },
+  composerInput: { flex: 1, minHeight: 50, maxHeight: 110, paddingVertical: 12 },
+  send: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  imageChip: {
+    height: 42,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  chipImage: { width: 30, height: 30, borderRadius: 7 },
+  content: { padding: 14, gap: 14, paddingBottom: 28 },
+  hero: {
+    borderWidth: 1.5,
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  heroTitle: { fontSize: 17, fontWeight: '900', marginBottom: 3 },
+  body: { fontSize: 14, lineHeight: 21 },
+  contentCard: { borderWidth: 1.5, borderRadius: 22, overflow: 'hidden' },
+  contentImage: { width: '100%', height: 180 },
+  contentBody: { padding: 15 },
+  contentTitle: { fontSize: 18, fontWeight: '900', marginTop: 10, marginBottom: 4 },
+  detail: { padding: 14, gap: 14, paddingBottom: 35 },
+  detailImage: { width: '100%', height: 230, borderRadius: 22 },
+  card: { borderRadius: 20, borderWidth: 1.5, padding: 17, gap: 12 },
+  detailTitle: { fontSize: 24, fontWeight: '900' },
+  bodyLarge: { fontSize: 15, lineHeight: 24 },
+  statLabel: { fontSize: 11, textTransform: 'uppercase' },
+  statValue: { fontSize: 17, fontWeight: '900' },
+  sectionTitle: { fontSize: 18, fontWeight: '900' },
+  bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  alert: { borderRadius: 18, borderWidth: 1.3, padding: 15, flexDirection: 'row', gap: 10 },
+  tag: { alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
+  account: { padding: 16, flexGrow: 1, justifyContent: 'center', gap: 14 },
+  feedback: { borderWidth: 1.3, borderRadius: 14, padding: 12 },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 25,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { fontSize: 30, fontWeight: '900' },
+  accountName: { textAlign: 'center', fontSize: 21, fontWeight: '900' },
+  segment: { flexDirection: 'row', padding: 4, borderRadius: 14 },
+  segmentButton: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 11 },
+  field: {
+    height: 52,
+    borderWidth: 1.2,
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  button: {
+    height: 50,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  helper: { textAlign: 'center', fontSize: 12, lineHeight: 18 },
+  api: { textAlign: 'center', fontSize: 10 },
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  modal: { flex: 1, flexDirection: 'row' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,.45)' },
+  drawer: { width: '84%', maxWidth: 340, height: '100%', borderRightWidth: 1.5, padding: 16 },
+  drawerHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  brand: { fontSize: 22, fontWeight: '900' },
+  drawerLabel: { marginTop: 24, marginBottom: 8, fontSize: 11, fontWeight: '900' },
+  thread: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10, borderRadius: 12 },
+  drawerAccount: {
+    borderTopWidth: 1,
+    paddingTop: 14,
+    flexDirection: 'row',
+    gap: 9,
+    alignItems: 'center',
+  },
+});

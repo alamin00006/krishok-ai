@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { AiService } from '../ai/ai.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -63,5 +64,34 @@ export class QuestionsService {
       limit: GUEST_QUESTION_LIMIT,
       remaining: Math.max(0, GUEST_QUESTION_LIMIT - questions.length),
     };
+  }
+
+  async setFeedback(
+    id: string,
+    feedback: string,
+    userId?: string,
+    guestId?: string,
+  ) {
+    if (!['LIKE', 'DISLIKE'].includes(feedback)) {
+      throw new BadRequestException('Feedback must be LIKE or DISLIKE');
+    }
+    if (!userId?.trim() && !guestId?.trim()) {
+      throw new BadRequestException('userId or guestId is required');
+    }
+    const question = await this.prisma.question.findFirst({
+      where: {
+        id,
+        OR: [
+          ...(userId ? [{ userId }] : []),
+          ...(guestId ? [{ guestId }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    if (!question) throw new NotFoundException('Question not found');
+    return this.prisma.question.update({
+      where: { id },
+      data: { feedback },
+    });
   }
 }

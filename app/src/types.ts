@@ -1,10 +1,13 @@
-export type ScreenName = 'chat' | 'crops' | 'diseases' | 'account' | 'detail';
+export type ScreenName = 'chat' | 'crops' | 'diseases' | 'experts' | 'account' | 'detail';
+export type ContentSection = 'crops' | 'diseases' | 'experts';
+export type Feedback = 'LIKE' | 'DISLIKE';
 
 export type Question = {
   id: string;
   text: string;
   imageUrl?: string | null;
   aiAnswer?: string | null;
+  feedback?: Feedback | null;
   createdAt?: string;
 };
 
@@ -32,8 +35,8 @@ export type ContentItem = {
   category: string;
   image: string;
   summary: string;
-  stats: Array<{ label: string; value: string }>;
-  sections: Array<{ title: string; items: string[] }>;
+  stats: { label: string; value: string }[];
+  sections: { title: string; items: string[] }[];
   alert: string;
   season?: string;
   duration?: string;
@@ -43,6 +46,8 @@ export type ContentItem = {
 export type ContentResponse = {
   crops: ContentItem[];
   diseases: ContentItem[];
+  experts: ContentItem[];
 };
 
 export type PickedImage = { uri: string; name: string; type: string };
+export type DetailTarget = { section: ContentSection; id: string } | null;

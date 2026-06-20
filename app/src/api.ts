@@ -5,6 +5,7 @@ import type {
   ConversationSummary,
   PickedImage,
   Question,
+  Feedback,
   User,
 } from './types';
 
@@ -15,9 +16,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      typeof data?.message === 'string' ? data.message : 'সার্ভারে সমস্যা হয়েছে।',
-    );
+    throw new Error(typeof data?.message === 'string' ? data.message : 'সার্ভারে সমস্যা হয়েছে।');
   }
   return data as T;
 }
@@ -40,26 +39,42 @@ export const api = {
       body: JSON.stringify(body),
     }),
   user: (id: string) => request<User>(`/users/${id}`),
+  updateUser: (id: string, name: string) =>
+    request<User>(`/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
   content: () => request<ContentResponse>('/content'),
-  contentDetail: (section: string, id: string) =>
-    request<ContentItem>(`/content/${section}/${id}`),
+  contentDetail: (section: string, id: string) => request<ContentItem>(`/content/${section}/${id}`),
   conversations: (userId: string) =>
-    request<ConversationSummary[]>(
-      `/conversations?userId=${encodeURIComponent(userId)}`,
-    ),
+    request<ConversationSummary[]>(`/conversations?userId=${encodeURIComponent(userId)}`),
   conversation: (id: string, userId: string) =>
-    request<Conversation>(
-      `/conversations/${id}?userId=${encodeURIComponent(userId)}`,
-    ),
+    request<Conversation>(`/conversations/${id}?userId=${encodeURIComponent(userId)}`),
   createConversation: (userId: string, title: string) =>
     request<Conversation>('/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, title }),
     }),
+  deleteConversation: (id: string, userId: string) =>
+    request<{ success: boolean }>(
+      `/conversations/${id}?userId=${encodeURIComponent(userId)}`,
+      { method: 'DELETE' }
+    ),
+  setFeedback: (
+    id: string,
+    feedback: Feedback,
+    identity: { userId?: string; guestId?: string }
+  ) =>
+    request<Question>(`/questions/${id}/feedback`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback, ...identity }),
+    }),
   guestQuestions: (guestId: string) =>
     request<{ questions: Question[]; used: number; limit: number; remaining: number }>(
-      `/questions?guestId=${encodeURIComponent(guestId)}`,
+      `/questions?guestId=${encodeURIComponent(guestId)}`
     ),
   sendGuestQuestion: (guestId: string, text: string, image?: PickedImage | null) => {
     const body = new FormData();
@@ -72,7 +87,7 @@ export const api = {
     conversationId: string,
     userId: string,
     text: string,
-    image?: PickedImage | null,
+    image?: PickedImage | null
   ) => {
     const body = new FormData();
     body.append('userId', userId);
