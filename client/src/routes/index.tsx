@@ -1,4 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { Link, useNavigate } from "@/lib/router-adapter";
 import { useEffect, useRef, useState } from "react";
 import {
   Sprout,
@@ -26,22 +29,6 @@ import {
 } from "@/store/api";
 import { clearCurrentUser, getCurrentUserId, getGuestId } from "@/lib/current-user";
 
-export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    thread: typeof search.thread === "string" ? search.thread : undefined,
-  }),
-  head: () => ({
-    meta: [
-      { title: "Krishok.ai — AI কৃষক সহকারী" },
-      {
-        name: "description",
-        content: "ফসলের রোগ, সার, সেচ, আবহাওয়া ও বাজারদর সম্পর্কে সহজ বাংলায় সঠিক পরামর্শ নিন।",
-      },
-    ],
-  }),
-  component: ChatPage,
-});
-
 /* ─── Assistant avatar ─── */
 function AssistantAvatar({ className = "h-8 w-8" }: { className?: string }) {
   return (
@@ -54,8 +41,8 @@ function AssistantAvatar({ className = "h-8 w-8" }: { className?: string }) {
 }
 
 /* ─── Chat page ─── */
-function ChatPage() {
-  const { thread } = Route.useSearch();
+export default function ChatPage() {
+  const thread = useSearchParams().get("thread") ?? undefined;
   const navigate = useNavigate({ from: "/" });
   const [userId, setUserId] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);

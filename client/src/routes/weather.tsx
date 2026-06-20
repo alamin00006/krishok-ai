@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { CloudSun, MapPin, Droplets, Wind, Sun, CloudRain, Cloud, Thermometer, AlertTriangle } from "lucide-react";
-
-export const Route = createFileRoute("/weather")({
-  head: () => ({
-    meta: [
-      { title: "আবহাওয়া — Krishok.ai" },
-      { name: "description", content: "আপনার এলাকার আবহাওয়া পূর্বাভাস ও কৃষি সতর্কতা।" },
-    ],
-  }),
-  component: WeatherPage,
-});
 
 const days = [
   { day: "আজ", icon: Sun, temp: "৩১°", min: "২৪°", cond: "রোদ" },
@@ -22,7 +14,7 @@ const days = [
   { day: "রবি", icon: Sun, temp: "৩৩°", min: "২৫°", cond: "রোদ" },
 ];
 
-function WeatherPage() {
+export default function WeatherPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

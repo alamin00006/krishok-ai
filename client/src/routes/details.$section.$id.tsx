@@ -1,4 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { useParams } from "next/navigation";
+import { Link } from "@/lib/router-adapter";
 import {
   ArrowLeft,
   Bell,
@@ -17,10 +20,6 @@ import {
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { useGetContentDetailQuery } from "@/store/api";
 
-export const Route = createFileRoute("/details/$section/$id")({
-  component: ContentDetailsPage,
-});
-
 const sectionMeta = {
   crops: { title: "ফসলের বিস্তারিত গাইড", icon: BookOpen, back: "/crops" },
   diseases: { title: "রোগ ও প্রতিকার", icon: Bug, back: "/diseases" },
@@ -30,8 +29,8 @@ const sectionMeta = {
   notifications: { title: "সতর্কতার বিস্তারিত", icon: Bell, back: "/notifications" },
 } as const;
 
-function ContentDetailsPage() {
-  const { section, id } = Route.useParams();
+export default function ContentDetailsPage() {
+  const { section, id } = useParams<{ section: string; id: string }>();
   const meta = sectionMeta[section as keyof typeof sectionMeta] ?? {
     title: "বিস্তারিত",
     icon: BookOpen,
@@ -64,7 +63,7 @@ function ContentDetailsPage() {
             <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
               <div className="text-[16px] font-bold text-red-700">তথ্য লোড করা যায়নি</div>
               <p className="mt-1 text-[13px] text-red-700/80">
-                Backend server চালু আছে এবং VITE_API_URL সঠিক কিনা দেখুন।
+                Backend server চালু আছে এবং NEXT_PUBLIC_API_URL সঠিক কিনা দেখুন।
               </p>
               <button
                 onClick={() => refetch()}

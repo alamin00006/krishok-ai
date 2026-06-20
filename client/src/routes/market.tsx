@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { TrendingUp, TrendingDown, Search, MapPin, ArrowUpRight } from "lucide-react";
-
-export const Route = createFileRoute("/market")({
-  head: () => ({
-    meta: [
-      { title: "বাজার দর — Krishok.ai" },
-      { name: "description", content: "দেশের প্রধান বাজারে ফসলের সর্বশেষ দাম ও প্রবণতা।" },
-    ],
-  }),
-  component: MarketPage,
-});
 
 const prices = [
   { name: "ধান (মোটা)", market: "ময়মনসিংহ", price: "১,১৫০", unit: "৳/মণ", change: "+২.৫%", up: true },
@@ -27,7 +19,7 @@ const marketDetailIds: Record<number, string> = {
   5: "green-chili",
 };
 
-function MarketPage() {
+export default function MarketPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

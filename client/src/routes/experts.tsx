@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { Users, Phone, MessageSquare, Star, Verified, Video } from "lucide-react";
-
-export const Route = createFileRoute("/experts")({
-  head: () => ({
-    meta: [
-      { title: "বিশেষজ্ঞের সাথে কথা — Krishok.ai" },
-      { name: "description", content: "কৃষি বিশেষজ্ঞদের সাথে সরাসরি কল, চ্যাট বা ভিডিও পরামর্শ নিন।" },
-    ],
-  }),
-  component: ExpertsPage,
-});
 
 const experts = [
   { name: "ড. আব্দুর রহমান", role: "ধান ও শস্য বিশেষজ্ঞ", exp: "১৫+ বছর", rating: 4.9, reviews: 1240, online: true, img: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&q=80" },
@@ -20,7 +12,7 @@ const experts = [
 ];
 const expertDetailIds = ["dr-abdur-rahman", "dr-salma-akter"];
 
-function ExpertsPage() {
+export default function ExpertsPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { Bell, CloudRain, Bug, TrendingUp, FlaskConical, CheckCheck, Users } from "lucide-react";
-
-export const Route = createFileRoute("/notifications")({
-  head: () => ({
-    meta: [
-      { title: "নোটিস — Krishok.ai" },
-      { name: "description", content: "ফসল, আবহাওয়া ও বাজার সংক্রান্ত সব আপডেট এক জায়গায়।" },
-    ],
-  }),
-  component: NotificationsPage,
-});
 
 const groups = [
   {
@@ -37,7 +29,7 @@ const colorMap: Record<string, string> = {
   violet: "bg-[var(--tile-violet)] text-[var(--icon-violet)]",
 };
 
-function NotificationsPage() {
+export default function NotificationsPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

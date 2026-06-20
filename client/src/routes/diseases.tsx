@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { Bug, Camera, Upload, ScanLine, AlertTriangle, ChevronRight } from "lucide-react";
-
-export const Route = createFileRoute("/diseases")({
-  head: () => ({
-    meta: [
-      { title: "রোগ ও প্রতিকার — Krishok.ai" },
-      { name: "description", content: "ফসলের রোগ চিনুন, লক্ষণ ও চিকিৎসা পদ্ধতি জানুন।" },
-    ],
-  }),
-  component: DiseasesPage,
-});
 
 const diseases = [
   { name: "ধানের ব্লাস্ট", crop: "ধান", severity: "উচ্চ", img: "https://images.unsplash.com/photo-1649088311431-9ffe92a4d4a4?w=600&q=80", desc: "পাতায় লম্বাটে বাদামী দাগ ও মাঝে ছাই রঙ।" },
@@ -31,7 +23,7 @@ const diseaseDetailIds: Record<number, string> = {
   2: "tomato-leaf-curl",
 };
 
-function DiseasesPage() {
+export default function DiseasesPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

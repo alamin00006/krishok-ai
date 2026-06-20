@@ -1,16 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+"use client";
+
+import { Link } from "@/lib/router-adapter";
 import { AppSidebar, PageHeader } from "@/components/app-sidebar";
 import { BookOpen, Search, Calendar, Droplets, Sun, Sprout, ChevronRight } from "lucide-react";
-
-export const Route = createFileRoute("/crops")({
-  head: () => ({
-    meta: [
-      { title: "ফসল গাইড — Krishok.ai" },
-      { name: "description", content: "মৌসুম অনুযায়ী ফসলের সম্পূর্ণ চাষ পদ্ধতি, সার, সেচ ও যত্নের গাইড।" },
-    ],
-  }),
-  component: CropsPage,
-});
 
 const crops = [
   { name: "ধান (BRRI dhan29)", season: "বোরো", duration: "১৬০-১৬৫ দিন", water: "উচ্চ", sun: "পূর্ণ", img: "https://images.unsplash.com/photo-1568347355280-d33fdf77d42a?w=600&q=80" },
@@ -24,7 +16,7 @@ const crops = [
 const categories = ["সব", "ধান্যশস্য", "সবজি", "ডাল", "তেলবীজ", "ফল", "মসলা"];
 const cropDetailIds = ["brri-dhan-29", "tomato"];
 
-function CropsPage() {
+export default function CropsPage() {
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#f6f7f9]">
       <AppSidebar />

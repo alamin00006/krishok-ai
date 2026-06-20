@@ -70,8 +70,7 @@ export interface ContentItem {
 }
 
 const apiBaseUrl =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/?$/, "/") ??
-  "http://localhost:5000/";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/?$/, "/") ?? "http://localhost:5000/";
 
 export const api = createApi({
   reducerPath: "api",
