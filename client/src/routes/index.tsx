@@ -325,7 +325,7 @@ function ChatPage() {
               <div className="handwritten-title mt-3 text-[24px] text-foreground">স্বাগতম! 👋</div>
               <p className="mt-1 max-w-md text-[13px] text-muted-foreground">
                 আপনি কি ফসলের রোগ, পোকামাকড়, সার ব্যবস্থাপনা, সেচ, বীজ নির্বাচন বা কৃষি প্রযুক্তি
-                নিয়ে জানতে চান? 🌱
+                নিয়ে জানতে চান?
               </p>
               <p className="mt-1 max-w-md text-[13px] font-bold">
                 প্রশ্ন লিখুন, সমাধান জানুন — স্মার্ট কৃষির পাশে Krishok.ai।
