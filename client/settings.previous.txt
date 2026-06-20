@@ -1,0 +1,313 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  Bell,
+  ChevronRight,
+  Globe,
+  LoaderCircle,
+  MapPin,
+  Save,
+  Settings,
+  Shield,
+  Sprout,
+  User,
+  X,
+} from "lucide-react";
+import { AppSidebar, PageHeader } from "@/components/app-sidebar";
+import {
+  type UserProfileInput,
+  useCreateUserMutation,
+  useGetUsersQuery,
+  useUpdateUserMutation,
+} from "@/store/api";
+import { getCurrentUserId, setCurrentUserId } from "@/lib/current-user";
+
+export const Route = createFileRoute("/settings")({
+  head: () => ({
+    meta: [
+      { title: "সেটিংস — Krishok.ai" },
+      {
+        name: "description",
+        content: "আপনার কৃষক প্রোফাইল, এলাকা ও ফসলের তথ্য পরিচালনা করুন।",
+      },
+    ],
+  }),
+  component: SettingsPage,
+});
+
+const emptyForm: UserProfileInput = {
+  name: "",
+  phone: "",
+  district: "",
+  crops: "",
+};
+
+function SettingsPage() {
+  const { data: users = [], isLoading, isError, refetch } = useGetUsersQuery();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const profile =
+    users.find((user) => user.id === selectedUserId) ?? users[0];
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<UserProfileInput>(emptyForm);
+  const [message, setMessage] = useState<string | null>(null);
+  const [createUser, createState] = useCreateUserMutation();
+  const [updateUser, updateState] = useUpdateUserMutation();
+  const saving = createState.isLoading || updateState.isLoading;
+
+  useEffect(() => {
+    setSelectedUserId(getCurrentUserId());
+  }, []);
+
+  useEffect(() => {
+    if (profile) {
+      if (!selectedUserId) {
+        setCurrentUserId(profile.id);
+        setSelectedUserId(profile.id);
+      }
+      setForm({
+        name: profile.name,
+        phone: profile.phone,
+        district: profile.district ?? "",
+        crops: profile.crops ?? "",
+      });
+    }
+  }, [profile, selectedUserId]);
+
+  const openEditor = () => {
+    setMessage(null);
+    setForm(
+      profile
+        ? {
+            name: profile.name,
+            phone: profile.phone,
+            district: profile.district ?? "",
+            crops: profile.crops ?? "",
+          }
+        : emptyForm,
+    );
+    setEditing(true);
+  };
+
+  const saveProfile = async (event: FormEvent) => {
+    event.preventDefault();
+    setMessage(null);
+    try {
+      if (profile) {
+        const updated = await updateUser({ id: profile.id, body: form }).unwrap();
+        setCurrentUserId(updated.id);
+        setSelectedUserId(updated.id);
+      } else {
+        const created = await createUser(form).unwrap();
+        setCurrentUserId(created.id);
+        setSelectedUserId(created.id);
+      }
+      setEditing(false);
+      setMessage("প্রোফাইল সফলভাবে সংরক্ষণ হয়েছে।");
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } };
+      setMessage(apiError.data?.message ?? "প্রোফাইল সংরক্ষণ করা যায়নি।");
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-[#f6f7f9]">
+      <AppSidebar />
+      <main className="flex min-w-0 flex-1 flex-col">
+        <PageHeader
+          icon={Settings}
+          title="সেটিংস"
+          subtitle="অ্যাকাউন্ট ও কৃষক প্রোফাইল"
+        />
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto max-w-2xl space-y-5">
+            {message && (
+              <div className="rounded-xl border border-border bg-white px-4 py-3 text-[13px] text-foreground">
+                {message}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="flex h-44 items-center justify-center rounded-2xl border border-border bg-white">
+                <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : isError ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                <p className="text-[13px] text-red-700">User API থেকে তথ্য লোড করা যায়নি।</p>
+                <button
+                  onClick={() => refetch()}
+                  className="mt-3 rounded-lg bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground"
+                >
+                  আবার চেষ্টা করুন
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-[var(--tile-green)] to-white p-5 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <Sprout className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[17px] font-bold text-foreground">
+                      {profile?.name ?? "আপনার কৃষক প্রোফাইল তৈরি করুন"}
+                    </div>
+                    <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                      {profile
+                        ? `${profile.phone}${profile.district ? ` • ${profile.district}` : ""}`
+                        : "নাম, ফোন, জেলা ও চাষের ফসল যোগ করুন"}
+                    </div>
+                    {profile && (
+                      <div className="mt-1.5 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {profile._count?.questions ?? 0}টি প্রশ্ন করেছেন
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={openEditor}
+                    className="rounded-lg border border-border bg-white px-3 py-1.5 text-[12px] font-semibold text-foreground hover:bg-secondary"
+                  >
+                    {profile ? "এডিট" : "তৈরি করুন"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {editing && (
+              <form
+                onSubmit={saveProfile}
+                className="rounded-2xl border border-border bg-white p-5 shadow-sm"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-[15px] font-bold text-foreground">
+                      {profile ? "প্রোফাইল আপডেট" : "নতুন প্রোফাইল"}
+                    </h2>
+                    <p className="text-[11px] text-muted-foreground">
+                      ফোন নম্বরটি প্রতিটি user-এর জন্য unique।
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(false)}
+                    className="rounded-lg p-2 text-muted-foreground hover:bg-secondary"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    label="নাম"
+                    value={form.name}
+                    onChange={(name) => setForm((current) => ({ ...current, name }))}
+                    placeholder="মোঃ রফিকুল ইসলাম"
+                    required
+                  />
+                  <Field
+                    label="ফোন"
+                    value={form.phone}
+                    onChange={(phone) => setForm((current) => ({ ...current, phone }))}
+                    placeholder="01712345678"
+                    required
+                  />
+                  <Field
+                    label="জেলা"
+                    value={form.district ?? ""}
+                    onChange={(district) => setForm((current) => ({ ...current, district }))}
+                    placeholder="ময়মনসিংহ"
+                  />
+                  <Field
+                    label="চাষের ফসল"
+                    value={form.crops ?? ""}
+                    onChange={(crops) => setForm((current) => ({ ...current, crops }))}
+                    placeholder="ধান, টমেটো, মরিচ"
+                  />
+                </div>
+
+                <button
+                  disabled={saving}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13px] font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  সংরক্ষণ করুন
+                </button>
+              </form>
+            )}
+
+            <div>
+              <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                অ্যাকাউন্ট
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+                <Row icon={User} title="ব্যক্তিগত তথ্য" desc={profile?.name ?? "প্রোফাইল তৈরি করা হয়নি"} />
+                <Row icon={MapPin} title="লোকেশন" desc={profile?.district ?? "জেলা যোগ করুন"} />
+                <Row icon={Sprout} title="আমার ফসল" desc={profile?.crops ?? "ফসল যোগ করুন"} />
+                <Row icon={Globe} title="ভাষা" desc="বাংলা" />
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                প্রেফারেন্স
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+                <Row icon={Bell} title="পুশ নোটিফিকেশন" desc="রোগ, আবহাওয়া ও বাজারদর" />
+                <Row icon={Shield} title="গোপনীয়তা" desc="ডেটা ও পারমিশন" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-[12px] font-semibold text-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+      />
+    </label>
+  );
+}
+
+function Row({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="flex items-center gap-4 border-b border-border px-5 py-3.5 last:border-0">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tile-green)]">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-semibold text-foreground">{title}</div>
+        <div className="truncate text-[12px] text-muted-foreground">{desc}</div>
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </div>
+  );
+}
