@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Krishok.ai",
+    "slug": "krishok-ai",
+    "version": "1.0.0",
+    
+    
+      "web": {
+        "favicon": "./assets/favicon.png"
+      },
+      
+        "experiments": {
+          "tsconfigPaths": true
+        },
+      
+      "plugins": [
+        [
+          "expo-image-picker",
+          {
+            "photosPermission": "ফসলের ছবি নির্বাচন করতে Krishok.ai-কে অনুমতি দিন।",
+            "cameraPermission": "ফসলের ছবি তুলতে Krishok.ai-কে অনুমতি দিন।"
+          }
+        ]
+      ],
+    
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    
+     "userInterfaceStyle": "automatic",
+    
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

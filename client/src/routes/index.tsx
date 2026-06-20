@@ -244,7 +244,7 @@ function ChatPage() {
       {/* ── Main chat area ── */}
       <main className="flex flex-1 flex-col min-w-0">
         {/* Header */}
-        <header className="paper-panel flex min-h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-white px-3 py-2 sm:px-6">
+        <header className="paper-panel flex min-h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-white py-2 pl-16 pr-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <AssistantAvatar className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
             <div className="min-w-0">

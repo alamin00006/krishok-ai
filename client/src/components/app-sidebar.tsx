@@ -173,11 +173,11 @@ export function AppSidebar({
         </div>
       </aside>
 
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Menu খুলুন"
-        className="fixed bottom-4 left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+    <button
+      type="button"
+      onClick={() => setMobileOpen(true)}
+      aria-label="Menu খুলুন"
+      className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-foreground shadow-md md:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -327,7 +327,7 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="paper-panel flex min-h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-white px-4 py-3 sm:gap-4 sm:px-6">
+    <header className="paper-panel flex min-h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-white py-3 pl-16 pr-4 sm:gap-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tile-green)]">
           <Icon className="h-5 w-5" style={{ color: "var(--icon-green)" }} />
