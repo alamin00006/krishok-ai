@@ -83,27 +83,19 @@ export default function AccountPage() {
           title={userId ? "আমার অ্যাকাউন্ট" : "আপনার অ্যাকাউন্ট"}
           subtitle={userId ? "প্রোফাইল ও সংরক্ষিত কথোপকথন" : "লগইন করুন অথবা নতুন অ্যাকাউন্ট খুলুন"}
         />
-        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-8">
+        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-8 ">
           <div className="mx-auto max-w-5xl">
-            {feedback && (
-              <div
-                role="alert"
-                className={`mb-4 rounded-2xl border px-4 py-3 text-[13px] font-medium ${
-                  feedback.type === "error"
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                }`}
-              >
-                {feedback.message}
-              </div>
-            )}
-
             {userId ? (
-              <ProfileCard user={user} loading={isLoading} onLogout={logout} />
+              <ProfileCard
+                user={user}
+                loading={isLoading}
+                onChat={() => navigate({ to: "/", search: { thread: undefined } })}
+                onLogout={logout}
+              />
             ) : (
               <div className="overflow-hidden rounded-[30px] border border-border bg-white shadow-[0_18px_60px_rgba(22,68,42,0.10)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
-                <section className="relative overflow-hidden bg-[var(--tile-green)] p-6 sm:p-8 lg:p-10">
-                  <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[24px] border-primary/5" />
+                <section className="relative overflow-hidden bg-(--tile-green) p-6 sm:p-8 lg:p-10">
+                  <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-24 border-primary/5" />
                   <div className="relative">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 shadow-sm">
                       <Sprout className="h-7 w-7 text-primary" />
@@ -138,6 +130,18 @@ export default function AccountPage() {
                         ? "আপনার সংরক্ষিত কৃষি আলোচনায় ফিরে যান।"
                         : "এক মিনিটেই অ্যাকাউন্ট তৈরি করে শুরু করুন।"}
                     </p>
+                    {feedback && (
+                      <div
+                        role="alert"
+                        className={`mt-3 rounded-2xl border px-4 py-3 text-[13px] font-medium ${
+                          feedback.type === "error"
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        {feedback.message}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mb-6 flex gap-6 border-b border-border">
@@ -178,7 +182,7 @@ export default function AccountPage() {
                       label="ফোন নম্বর"
                       value={phone}
                       onChange={setPhone}
-                      placeholder="01712345678"
+                      placeholder="01700000000"
                     />
                     <Field
                       icon={KeyRound}
@@ -221,6 +225,7 @@ export default function AccountPage() {
 function ProfileCard({
   user,
   loading,
+  onChat,
   onLogout,
 }: {
   user?: {
@@ -229,6 +234,7 @@ function ProfileCard({
     _count?: { conversations: number };
   };
   loading: boolean;
+  onChat: () => void;
   onLogout: () => void;
 }) {
   return (
@@ -266,8 +272,18 @@ function ProfileCard({
             </div>
           </div>
           <button
+            type="button"
+            onClick={onChat}
+            className="group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[13px] font-bold text-primary-foreground transition-all hover:brightness-95"
+          >
+            <MessageCircleMore className="h-4 w-4" />
+            চ্যাটে যান
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </button>
+          <button
+            type="button"
             onClick={onLogout}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700 transition-colors hover:bg-red-100"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700 transition-colors hover:bg-red-100"
           >
             <LogOut className="h-4 w-4" /> লগআউট
           </button>
