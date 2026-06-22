@@ -40,11 +40,7 @@ export class QuestionsService {
     let imageUrl: string | undefined;
     if (file) imageUrl = await this.uploadService.uploadImage(file);
 
-    const aiAnswer = await this.aiService.askKrishokAi(
-      imageUrl
-        ? `${cleanText}\nUser also uploaded crop image: ${imageUrl}`
-        : cleanText,
-    );
+    const aiAnswer = await this.aiService.askKrishokAi(cleanText, [], imageUrl);
 
     return this.prisma.question.create({
       data: { text: cleanText, imageUrl, aiAnswer, guestId: cleanGuestId },

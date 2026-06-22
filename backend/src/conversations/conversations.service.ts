@@ -83,18 +83,19 @@ export class ConversationsService {
     let imageUrl: string | undefined;
     if (file) imageUrl = await this.uploadService.uploadImage(file);
 
-    const history = [...conversation.questions].reverse().flatMap((question) => [
-      { role: 'user' as const, content: question.text },
-      ...(question.aiAnswer
-        ? [{ role: 'assistant' as const, content: question.aiAnswer }]
-        : []),
-    ]);
+    const history = [...conversation.questions]
+      .reverse()
+      .flatMap((question) => [
+        { role: 'user' as const, content: question.text },
+        ...(question.aiAnswer
+          ? [{ role: 'assistant' as const, content: question.aiAnswer }]
+          : []),
+      ]);
 
     const aiAnswer = await this.aiService.askKrishokAi(
-      imageUrl
-        ? `${cleanText}\nUser also uploaded crop image: ${imageUrl}`
-        : cleanText,
+      cleanText,
       history,
+      imageUrl,
     );
 
     const [question] = await this.prisma.$transaction([
