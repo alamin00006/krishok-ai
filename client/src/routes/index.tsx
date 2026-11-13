@@ -309,7 +309,7 @@ export default function ChatPage() {
           {!loading && ordered.length === 0 && (
             <div className="mt-10 flex flex-col items-center justify-center text-center">
               <AssistantAvatar className="h-14 w-14" />
-              <div className="handwritten-title mt-3 text-[24px] text-foreground">স্বাগতম! 👋</div>
+              <div className="handwritten-title mt-3 text-[24px] text-foreground">স্বাগতম!</div>
               <p className="mt-1 max-w-md text-[13px] text-muted-foreground">
                 আপনি কি ফসলের রোগ, পোকামাকড়, সার ব্যবস্থাপনা, সেচ, বীজ নির্বাচন বা কৃষি প্রযুক্তি
                 নিয়ে জানতে চান?

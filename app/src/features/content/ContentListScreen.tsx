@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../../api';
 import { Header, getError } from '../../components/ui';
 import { useApp } from '../../context/AppContext';
@@ -8,9 +8,8 @@ import type { ContentResponse, ContentSection } from '../../types';
 import { ContentCard } from './ContentCard';
 
 const copy: Record<ContentSection, { title: string; subtitle: string; hero: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  crops: { title: 'ফসল গাইড', subtitle: 'চাষ ও পরিচর্যা', hero: 'সঠিক সময়ে সঠিক ফসল', icon: 'leaf-outline' },
-  diseases: { title: 'রোগ ও প্রতিকার', subtitle: 'লক্ষণ ও করণীয়', hero: 'দ্রুত রোগ শনাক্ত করুন', icon: 'bug-outline' },
-  experts: { title: 'কৃষি বিশেষজ্ঞ', subtitle: 'অভিজ্ঞ পরামর্শক', hero: 'বিশেষজ্ঞের কাছ থেকে জানুন', icon: 'people-outline' },
+  crops: { title: 'ফসল গাইড', subtitle: 'চাষ, পরিচর্যা ও ফলনের তথ্য', hero: 'ফসলের যত্ন হোক সহজ', icon: 'leaf-outline' },
+  diseases: { title: 'রোগ ও প্রতিকার', subtitle: 'লক্ষণ চিনুন, করণীয় জানুন', hero: 'শুরুতেই রোগ শনাক্ত করুন', icon: 'bug-outline' },
 };
 
 export function ContentListScreen({
@@ -21,6 +20,8 @@ export function ContentListScreen({
   onOpen: (id: string) => void;
 }) {
   const { theme } = useApp();
+  const { width } = useWindowDimensions();
+  const columns = width >= 700 ? 2 : 1;
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const load = useCallback(async () => {
@@ -40,6 +41,8 @@ export function ContentListScreen({
     <View style={s.flex}>
       <Header theme={theme} title={meta.title} subtitle={meta.subtitle} icon={meta.icon} />
       <FlatList
+        key={columns}
+        numColumns={columns}
         data={content?.[section] ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={s.content}
@@ -50,11 +53,18 @@ export function ContentListScreen({
             <Ionicons name={meta.icon} size={30} color={theme.primary} />
             <View style={s.flex}>
               <Text style={[s.heroTitle, { color: theme.ink }]}>{meta.hero}</Text>
-              <Text style={{ color: theme.muted }}>Backend API থেকে পূর্ণ তথ্য দেখুন।</Text>
+              <Text style={[s.heroText, { color: theme.muted }]}>
+                প্রয়োজনীয় তথ্য, পরামর্শ ও করণীয় এক জায়গায় দেখুন।
+              </Text>
             </View>
           </View>
         }
-        renderItem={({ item }) => <ContentCard theme={theme} item={item} onPress={() => onOpen(item.id)} />}
+        columnWrapperStyle={columns > 1 ? s.columns : undefined}
+        renderItem={({ item }) => (
+          <View style={columns > 1 ? s.columnItem : undefined}>
+            <ContentCard theme={theme} item={item} onPress={() => onOpen(item.id)} />
+          </View>
+        )}
       />
     </View>
   );
@@ -62,7 +72,10 @@ export function ContentListScreen({
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 15, paddingBottom: 30 },
-  hero: { borderWidth: 1, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 15 },
-  heroTitle: { fontSize: 18, fontWeight: '900', marginBottom: 3 },
+  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 34 },
+  columns: { gap: 16 },
+  columnItem: { flex: 1, minWidth: 0 },
+  hero: { borderWidth: 1, borderRadius: 24, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
+  heroTitle: { fontSize: 19, fontWeight: '800', marginBottom: 4 },
+  heroText: { fontSize: 12, lineHeight: 18 },
 });

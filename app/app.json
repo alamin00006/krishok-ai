@@ -17,7 +17,7 @@
         "expo-image-picker",
         {
           "photosPermission": "ফসলের ছবি নির্বাচন করতে Krishok.ai-কে অনুমতি দিন।",
-          "cameraPermission": "ফসলের ছবি তুলতে Krishok.ai-কে অনুমতি দিন।"
+          "cameraPermission": "ফসলের ছবি তুলতে Krishok.ai-কে ক্যামেরা ব্যবহারের অনুমতি দিন।"
         }
       ],
       [
@@ -44,6 +44,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "xyz.krishokai.app",
+      "versionCode": 1,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

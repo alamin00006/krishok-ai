@@ -31,6 +31,19 @@ export function AuthForm({
 }) {
   return (
     <Card theme={theme}>
+      <View style={s.intro}>
+        <View style={[s.brandIcon, { backgroundColor: theme.mint }]}>
+          <Text style={[s.brandLeaf, { color: theme.primary }]}>🌱</Text>
+        </View>
+        <Text style={[s.title, { color: theme.ink }]}>
+          {mode === 'login' ? 'স্বাগতম' : 'নতুন অ্যাকাউন্ট খুলুন'}
+        </Text>
+        <Text style={[s.subtitle, { color: theme.muted }]}>
+          {mode === 'login'
+            ? 'আপনার সংরক্ষিত কৃষি আলোচনায় ফিরে যান।'
+            : 'চ্যাট ইতিহাস রাখতে এক মিনিটেই অ্যাকাউন্ট তৈরি করুন।'}
+        </Text>
+      </View>
       <View style={[s.segment, { backgroundColor: theme.paperDeep }]}>
         {(['login', 'register'] as const).map((item) => (
           <Pressable key={item} onPress={() => onMode(item)} style={[s.segmentButton, mode === item && { backgroundColor: theme.card }]}>
@@ -42,7 +55,7 @@ export function AuthForm({
       </View>
       {mode === 'register' && <Field theme={theme} icon="person-outline" value={name} onChange={onName} placeholder="আপনার নাম" />}
       <Field theme={theme} icon="call-outline" value={phone} onChange={onPhone} placeholder="01712345678" phone />
-      <Field theme={theme} icon="key-outline" value={password} onChange={onPassword} placeholder="কমপক্ষে ৬ অক্ষরের password" secure />
+      <Field theme={theme} icon="key-outline" value={password} onChange={onPassword} placeholder="কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড" secure />
       <Button
         theme={theme}
         label={mode === 'register' ? 'অ্যাকাউন্ট তৈরি করুন' : 'লগইন করুন'}
@@ -50,13 +63,20 @@ export function AuthForm({
         loading={loading}
         onPress={onSubmit}
       />
-      <Text style={[s.note, { color: theme.muted }]}>অ্যাকাউন্ট ছাড়া সর্বোচ্চ ৫টি প্রশ্ন করা যাবে।</Text>
+      <Text style={[s.note, { color: theme.muted }]}>
+        অ্যাকাউন্ট ছাড়াও সর্বোচ্চ ৫টি প্রশ্ন করতে পারবেন।
+      </Text>
     </Card>
   );
 }
 
 const s = StyleSheet.create({
+  intro: { alignItems: 'center', marginBottom: 22 },
+  brandIcon: { width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  brandLeaf: { fontSize: 27 },
+  title: { fontSize: 24, fontWeight: '800', marginTop: 13 },
+  subtitle: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 5 },
   segment: { flexDirection: 'row', borderRadius: 14, padding: 4 },
   segmentButton: { flex: 1, minHeight: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  note: { textAlign: 'center', marginTop: 13, fontSize: 12 },
+  note: { textAlign: 'center', marginTop: 16, fontSize: 12, lineHeight: 18 },
 });

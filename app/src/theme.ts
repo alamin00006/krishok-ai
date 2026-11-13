@@ -33,10 +33,10 @@ export type Theme = {
 export function makeTheme(dark: boolean): Theme {
   return dark
     ? {
-        background: '#111a15',
-        paper: '#17231c',
-        paperDeep: '#1d2c23',
-        card: '#203128',
+        background: '#101713',
+        paper: '#172019',
+        paperDeep: '#1c291f',
+        card: '#202e24',
         ink: '#f1f6ef',
         muted: '#a9b9ae',
         line: '#365043',
@@ -48,10 +48,10 @@ export function makeTheme(dark: boolean): Theme {
         amberSoft: '#40371f',
       }
     : {
-        background: colors.paper,
-        paper: colors.white,
-        paperDeep: colors.paperDeep,
-        card: '#fffef9',
+        background: '#f7f4e9',
+        paper: '#fffdf7',
+        paperDeep: '#f1ecdc',
+        card: '#fffefb',
         ink: colors.ink,
         muted: colors.muted,
         line: colors.line,

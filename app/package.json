@@ -2,11 +2,14 @@
   "name": "krishok-ai-app",
   "version": "1.0.0",
   "scripts": {
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "android:go": "expo start --android",
+    "ios": "expo run:ios",
     "start": "expo start",
     "start:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-expo.ps1",
     "prebuild": "expo prebuild",
+    "build:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-android.ps1 apk",
+    "build:aab": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-android.ps1 aab",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
     "web": "expo start --web"

@@ -17,19 +17,25 @@ Expo React Native app connected to the NestJS backend in `../backend`.
 
 Copy `.env.example` to `.env`.
 
-Android emulator:
+Production API:
 
 ```env
-EXPO_PUBLIC_API_URL=http://10.0.2.2:5000
+EXPO_PUBLIC_API_URL=https://api.krishokai.xyz
 ```
 
-Physical phone:
+## Android release
 
-```env
-EXPO_PUBLIC_API_URL=http://YOUR_PC_LAN_IP:5000
+Installable APK:
+
+```powershell
+npm run build:apk
 ```
 
-The phone and backend computer must be on the same network.
+Play Store AAB:
+
+```powershell
+npm run build:aab
+```
 
 ## Run
 

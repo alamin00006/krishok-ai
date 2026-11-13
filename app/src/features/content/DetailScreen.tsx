@@ -21,9 +21,10 @@ export function DetailScreen({
   }, [target]);
   return (
     <View style={s.flex}>
-      <Header theme={theme} title="বিস্তারিত গাইড" icon="arrow-back" onIcon={onBack} />
+      <Header theme={theme} title="বিস্তারিত তথ্য" icon="arrow-back" onIcon={onBack} />
       {!item ? <Loading theme={theme} /> : (
         <ScrollView contentContainerStyle={s.content}>
+          <View style={s.inner}>
           <Image source={{ uri: item.image }} style={s.image} />
           <Card theme={theme}>
             <Text style={[s.category, { color: theme.primary }]}>{item.category}</Text>
@@ -51,6 +52,7 @@ export function DetailScreen({
             <Ionicons name="warning-outline" size={22} color={theme.amber} />
             <Text style={[s.body, s.flex, { color: theme.amber }]}>{item.alert}</Text>
           </View>
+          </View>
         </ScrollView>
       )}
     </View>
@@ -60,7 +62,8 @@ export function DetailScreen({
 const s = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 15, paddingBottom: 35 },
-  image: { width: '100%', height: 235, borderRadius: 23, marginBottom: 14 },
+  inner: { width: '100%', maxWidth: 820, alignSelf: 'center' },
+  image: { width: '100%', aspectRatio: 16 / 10, maxHeight: 380, borderRadius: 23, marginBottom: 14 },
   category: { fontWeight: '900' },
   title: { fontSize: 25, fontWeight: '900', marginTop: 4 },
   body: { lineHeight: 23, marginTop: 7 },

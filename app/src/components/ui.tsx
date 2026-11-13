@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import type { Theme } from '../theme';
@@ -24,14 +25,15 @@ export function Header({
   onIcon?: () => void;
   right?: React.ReactNode;
 }) {
+  const compact = useWindowDimensions().width < 360;
   return (
-    <View style={[s.header, { backgroundColor: theme.paper, borderColor: theme.line }]}>
-      <Pressable disabled={!onIcon} onPress={onIcon} style={[s.icon, { backgroundColor: theme.mint }]}>
-        <Ionicons name={icon} size={22} color={theme.primary} />
+    <View style={[s.header, compact && s.headerCompact, { backgroundColor: theme.paper, borderColor: theme.line }]}>
+      <Pressable disabled={!onIcon} onPress={onIcon} style={[s.icon, compact && s.iconCompact, { backgroundColor: theme.mint }]}>
+        <Ionicons name={icon} size={compact ? 20 : 22} color={theme.primary} />
       </Pressable>
       <View style={s.flex}>
-        <Text numberOfLines={1} style={[s.title, { color: theme.ink }]}>{title}</Text>
-        {!!subtitle && <Text numberOfLines={1} style={[s.subtitle, { color: theme.muted }]}>{subtitle}</Text>}
+        <Text numberOfLines={1} style={[s.title, compact && s.titleCompact, { color: theme.ink }]}>{title}</Text>
+        {!!subtitle && !compact && <Text numberOfLines={1} style={[s.subtitle, { color: theme.muted }]}>{subtitle}</Text>}
       </View>
       {right}
     </View>
@@ -126,14 +128,17 @@ export function getError(error: unknown) {
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  header: { minHeight: 68, borderBottomWidth: 1, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  icon: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 18, fontWeight: '900' },
+  header: { minHeight: 74, borderBottomWidth: 1, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerCompact: { minHeight: 62, paddingHorizontal: 10, paddingVertical: 8, gap: 8 },
+  icon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  iconCompact: { width: 36, height: 36, borderRadius: 12 },
+  title: { fontSize: 19, fontWeight: '800', letterSpacing: -0.2 },
+  titleCompact: { fontSize: 16 },
   subtitle: { fontSize: 12, marginTop: 2 },
-  button: { minHeight: 48, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '900' },
-  field: { minHeight: 50, borderWidth: 1, borderRadius: 15, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: 9, marginTop: 11 },
+  button: { minHeight: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 },
+  buttonText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  field: { minHeight: 54, borderWidth: 1, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, marginTop: 12 },
   input: { flex: 1, fontSize: 15 },
-  card: { borderWidth: 1, borderRadius: 22, padding: 17, marginBottom: 13 },
+  card: { borderWidth: 1, borderRadius: 24, padding: 20, marginBottom: 14, elevation: 1 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

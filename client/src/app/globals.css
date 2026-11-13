@@ -289,3 +289,77 @@ textarea:focus {
 .dark .note-bubble-user {
   box-shadow: 2px 3px 0 oklch(0.04 0.01 145 / 55%);
 }
+
+/* Production UI refinement */
+:root {
+  --radius: 0.9rem;
+  --background: oklch(0.975 0.012 145);
+  --card: oklch(0.995 0.006 145);
+  --border: oklch(0.88 0.025 145);
+  --input: oklch(0.88 0.025 145);
+  --paper-line: transparent;
+  --paper-margin: transparent;
+  --sketch-shadow: oklch(0.2 0.025 150 / 7%);
+}
+
+.dark {
+  --background: oklch(0.18 0.02 155);
+  --card: oklch(0.22 0.024 155);
+  --border: oklch(0.34 0.025 155);
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    background-image: radial-gradient(ellipse at 15% 0%, color-mix(in oklch, var(--primary) 5%, transparent), transparent 34rem);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+.paper-panel {
+  background-color: color-mix(in oklch, var(--card) 96%, transparent) !important;
+  backdrop-filter: blur(16px);
+}
+
+.sketch-surface,
+:where(.rounded-2xl, .rounded-3xl).border.bg-white,
+:where(.rounded-2xl, .rounded-3xl).border.bg-card {
+  border-width: 1px;
+  box-shadow: 0 8px 24px var(--sketch-shadow);
+}
+
+.sketch-surface,
+.note-bubble-user,
+.note-bubble-ai {
+  border-radius: 1rem;
+  transform: none;
+}
+
+.note-bubble-user {
+  box-shadow: 0 6px 18px color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+.note-bubble-ai {
+  box-shadow: 0 6px 20px var(--sketch-shadow);
+}
+
+button.bg-primary,
+a.bg-primary {
+  border-width: 1px;
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 10px color-mix(in oklch, var(--primary) 20%, transparent);
+  transform: none;
+}
+
+button.bg-primary:hover,
+a.bg-primary:hover {
+  transform: translateY(-1px);
+}
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 22%, transparent);
+}

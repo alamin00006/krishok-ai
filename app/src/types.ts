@@ -1,5 +1,5 @@
-export type ScreenName = 'chat' | 'crops' | 'diseases' | 'experts' | 'account' | 'detail';
-export type ContentSection = 'crops' | 'diseases' | 'experts';
+export type ScreenName = 'chat' | 'crops' | 'diseases' | 'account' | 'detail';
+export type ContentSection = 'crops' | 'diseases';
 export type Feedback = 'LIKE' | 'DISLIKE';
 
 export type Question = {
@@ -46,7 +46,6 @@ export type ContentItem = {
 export type ContentResponse = {
   crops: ContentItem[];
   diseases: ContentItem[];
-  experts: ContentItem[];
 };
 
 export type PickedImage = { uri: string; name: string; type: string };

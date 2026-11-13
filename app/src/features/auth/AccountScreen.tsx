@@ -32,7 +32,7 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
       await login(result);
       setUser(result);
       setPassword('');
-      setMessage({ error: false, text: mode === 'register' ? 'অ্যাকাউন্ট তৈরি হয়েছে।' : 'লগইন সফল।' });
+      setMessage({ error: false, text: mode === 'register' ? 'অ্যাকাউন্ট তৈরি হয়েছে।' : 'লগইন সফল হয়েছে।' });
       onDone();
     } catch (error) {
       setMessage({ error: true, text: getError(error) });
@@ -57,8 +57,14 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={s.flex}>
-      <Header theme={theme} title={userId ? 'প্রোফাইল' : 'লগইন'} subtitle="Krishok.ai account" icon="person-outline" />
+      <Header
+        theme={theme}
+        title={userId ? 'আমার প্রোফাইল' : 'অ্যাকাউন্ট'}
+        subtitle={userId ? 'আপনার তথ্য ও সংরক্ষিত চ্যাট' : 'লগইন অথবা অ্যাকাউন্ট তৈরি করুন'}
+        icon="person-outline"
+      />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
+        <View style={s.inner}>
         {!!message && (
           <View style={[s.message, { backgroundColor: message.error ? theme.redSoft : theme.mint, borderColor: message.error ? theme.red : theme.primary }]}>
             <Text style={{ color: message.error ? theme.red : theme.primary }}>{message.text}</Text>
@@ -87,7 +93,8 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
             onSubmit={() => void submit()}
           />
         )}
-        <Text style={[s.api, { color: theme.muted }]}>API: {API_URL}</Text>
+        <Text style={[s.api, { color: theme.muted }]}>সংযুক্ত সার্ভার: {API_URL}</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -95,7 +102,8 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 30 },
+  content: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 34 },
+  inner: { width: '100%', maxWidth: 620, alignSelf: 'center' },
   message: { borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 12 },
   api: { textAlign: 'center', fontSize: 10, marginTop: 4 },
 });

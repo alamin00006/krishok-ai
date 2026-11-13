@@ -18,7 +18,7 @@ export function MessageItem({
       <View style={s.userRow}>
         <View style={[s.userBubble, { backgroundColor: theme.mint, borderColor: theme.line }]}>
           <Text style={[s.message, { color: theme.ink }]}>{item.text}</Text>
-          {!!item.imageUrl && <Image source={{ uri: item.imageUrl }} style={s.image} />}
+          {!!item.imageUrl && <Image source={{ uri: item.imageUrl }} style={s.image} resizeMode="cover" />}
         </View>
       </View>
       {!!item.aiAnswer && (
@@ -37,12 +37,12 @@ export function MessageItem({
 }
 
 const s = StyleSheet.create({
-  wrap: { marginBottom: 16 },
+  wrap: { marginBottom: 20 },
   userRow: { alignItems: 'flex-end' },
-  userBubble: { maxWidth: '84%', borderWidth: 1, borderRadius: 20, borderBottomRightRadius: 6, padding: 13 },
+  userBubble: { maxWidth: '84%', borderWidth: 1, borderRadius: 21, borderBottomRightRadius: 7, paddingHorizontal: 15, paddingVertical: 13 },
   aiRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 10 },
   avatar: { width: 34, height: 34, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  aiBubble: { flex: 1, borderWidth: 1, borderRadius: 20, borderTopLeftRadius: 6, padding: 14 },
+  aiBubble: { flex: 1, borderWidth: 1, borderRadius: 21, borderTopLeftRadius: 7, padding: 15, elevation: 1 },
   message: { fontSize: 15, lineHeight: 24 },
-  image: { width: 190, height: 130, borderRadius: 13, marginTop: 9 },
+  image: { width: '100%', maxWidth: 260, aspectRatio: 3 / 2, borderRadius: 13, marginTop: 9 },
 });

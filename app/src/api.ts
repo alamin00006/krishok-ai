@@ -16,13 +16,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(typeof data?.message === 'string' ? data.message : 'সার্ভারে সমস্যা হয়েছে।');
+    throw new Error(typeof data?.message === 'string' ? data.message : 'সার্ভারের সঙ্গে যোগাযোগ করা যাচ্ছে না।');
   }
   return data as T;
 }
 
 function appendImage(body: FormData, image?: PickedImage | null) {
-  if (image) body.append('image', image as unknown as Blob);
+  if (!image) return;
+  body.append(
+    'image',
+    {
+      uri: image.uri,
+      name: image.name,
+      type: image.type,
+    } as unknown as Blob
+  );
 }
 
 export const api = {

@@ -13,21 +13,31 @@ export function ImageInputButton({
 }) {
   const mapAsset = (asset: ImagePicker.ImagePickerAsset): PickedImage => ({
     uri: asset.uri,
-    name: asset.fileName ?? `crop-${Date.now()}.jpg`,
-    type: asset.mimeType ?? 'image/jpeg',
+    name:
+      asset.fileName ??
+      `crop-${Date.now()}.${asset.mimeType === 'image/png' ? 'png' : 'jpg'}`,
+    type: asset.mimeType?.startsWith('image/') ? asset.mimeType : 'image/jpeg',
   });
 
   const library = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+    });
     if (!result.canceled) onPick(mapAsset(result.assets[0]));
   };
   const camera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('অনুমতি প্রয়োজন', 'ছবি তোলার জন্য ক্যামেরা অনুমতি দিন।');
+      Alert.alert('অনুমতি প্রয়োজন', 'ছবি তোলার জন্য ক্যামেরা ব্যবহারের অনুমতি দিন।');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.75 });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+    });
     if (!result.canceled) onPick(mapAsset(result.assets[0]));
   };
 
@@ -36,9 +46,9 @@ export function ImageInputButton({
       theme={theme}
       icon="camera-outline"
       onPress={() =>
-        Alert.alert('ফসলের ছবি', 'ছবির উৎস নির্বাচন করুন', [
-          { text: 'ক্যামেরা', onPress: () => void camera() },
-          { text: 'গ্যালারি', onPress: () => void library() },
+        Alert.alert('ফসলের ছবি', 'কোথা থেকে ছবি নেবেন?', [
+          { text: 'ক্যামেরা খুলুন', onPress: () => void camera() },
+          { text: 'গ্যালারি থেকে নিন', onPress: () => void library() },
           { text: 'বাতিল', style: 'cancel' },
         ])
       }

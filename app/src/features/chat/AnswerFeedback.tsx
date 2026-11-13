@@ -14,7 +14,7 @@ export function AnswerFeedback({
 }) {
   return (
     <View style={s.row}>
-      <Text style={[s.label, { color: theme.muted }]}>উত্তরটি সহায়ক?</Text>
+      <Text style={[s.label, { color: theme.muted }]}>উত্তরটি সহায়ক ছিল?</Text>
       {(['LIKE', 'DISLIKE'] as const).map((feedback) => {
         const selected = value === feedback;
         return (
